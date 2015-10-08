@@ -1,3 +1,15 @@
 * Cleaning Schedule Generator
 
 This is a generator for a cleaning schedule for the inhabitants of the Homely Homestead. It tries to be somewhat fair by keeping each person's balance of both individual tasks and all tasks as equal as possible. Names and tasks can be configured with the data structure =tasks=.
+
+#+BEGIN_SRC python
+tasks = [("KüAuf", 1, 0),
+         ("KüKe", 4, 0),
+         ("KüWi", 4, 2),
+         ("GaKe", 6, 0),
+         ("GaWi", 6, 3),
+         ("Klos", 2, 0),
+         ("WaBe", 2, 0)]
+#+END_SRC
+
+The format is ("name", period, offset). Please keep comments about the cleanliness standards of the inhabitants of the Homely Homestead for yourself.
