@@ -1,0 +1,3 @@
+* Cleaning Schedule Generator
+
+This is a generator for a cleaning schedule for the inhabitants of the Homely Homestead. It tries to be somewhat fair by keeping each person's balance of both individual tasks and all tasks as equal as possible. Names and tasks can be configured with the data structure =tasks=.
