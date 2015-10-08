@@ -5,9 +5,8 @@ from datetime import date, timedelta
 from random import randint, seed
 
 people = ["Anna", "Bea", "Dominik", "Sofia", "Philipp"]
-startDate = date(2015, 10, 12)
 printFrom = 1
-printTo = 40
+printTo = 10
 tasks = [("KüAuf", 1, 0),
          ("KüKe", 4, 0),
          ("KüWi", 4, 2),
@@ -16,10 +15,11 @@ tasks = [("KüAuf", 1, 0),
          ("Klos", 2, 0),
          ("WaBe", 2, 0)]
 
+startDate = date(2015, 10, 12)
 weekDelta = timedelta(weeks=1)
 assignedTasks = {}
 taskBalance = {}
-seed(2)
+seed(1)
 
 for p in people:
     assignedTasks[p] = [""] * printTo
