@@ -4,16 +4,30 @@
 from datetime import date, timedelta
 from random import randint, seed
 
-people = ["Anna", "Bea", "Dominik", "Sofia", "Philipp"]
+class Task:
+    def __init__(self, name, period, offset, desc):
+        self.name = name
+        self.period = period
+        self.offset = offset
+        self.desc = desc
+
+
+people = ["Anna", "Bea", "Dominik", "Sophia", "Philipp"]
 printFrom = 1
-printTo = 10
-tasks = [("KüAuf", 1, 0),
-         ("KüKe", 4, 0),
-         ("KüWi", 4, 2),
-         ("GaKe", 6, 0),
-         ("GaWi", 6, 3),
-         ("Klos", 2, 0),
-         ("WaBe", 2, 0)]
+printTo = 13
+tasks = [Task("KüAuf", 1, 0, ("Küche Aufräumen. "
+                              "Flächen, Herd und Tisch "
+                              "aufräumen und abwischen. Mülleimer leeren")),
+         Task("KüKe", 4, 1, ("Küche Kehren")),
+         Task("KüWi", 4, 3, ("Küche Wischen")),
+         Task("GaKe", 8, 1, ("Gang Kehren/Staubstaugen")),
+         Task("GaWi", 8, 5, ("Gang Wischen")),
+         Task("Klos", 2, 0, ("Beide Klos putzen")),
+         Task("WaBe", 2, 1, ("Waschbecken in beiden Toiletten putzen")),
+         Task("GlaMü", 6, 2,("Glas Müll wegbringen") ),
+         Task("Surp", 2, 0, ("Surprise Task. Putze irgendetwas das dreckig ist, und nicht"
+                             " von einem anderen Task abgedeckt wird"))]
+
 
 startDate = date(2015, 10, 12)
 weekDelta = timedelta(weeks=1)
@@ -25,18 +39,23 @@ for p in people:
     assignedTasks[p] = [""] * printTo
     taskBalance[p] = {}
     for task in tasks:
-        taskBalance[p][task[0]] = 1
+        taskBalance[p][task] = 0
 
-def cmpBalance(p1, p2, task):
-    if taskBalance[p1][task[0]] > taskBalance[p2][task[0]]:
+def cmpBalance(p1, p2, task, w):
+    if taskBalance[p1][task] > taskBalance[p2][task]:
         return p1
-    if taskBalance[p1][task[0]] < taskBalance[p2][task[0]]:
+    if taskBalance[p1][task] < taskBalance[p2][task]:
         return p2
     totalBalance1 = 0
     totalBalance2 = 0
+
+    if len(assignedTasks[p1][w]) > len(assignedTasks[p2][w]):
+        return p2
+    if len(assignedTasks[p1][w]) < len(assignedTasks[p2][w]):
+        return p1
     for t in tasks:
-        totalBalance1 += taskBalance[p1][t[0]]
-        totalBalance2 += taskBalance[p2][t[0]]
+        totalBalance1 += taskBalance[p1][t]
+        totalBalance2 += taskBalance[p2][t]
     if totalBalance1 > totalBalance2:
         return p1
     if totalBalance1 < totalBalance2:
@@ -48,14 +67,15 @@ def cmpBalance(p1, p2, task):
 
 for w in range(1, printTo):
     for task in tasks:
-        if (w+task[2]) % task[1] == 0:
+        if (w+task.offset) % task.period == 0:
             duePerson = "Anna"
             for p in people:
-                duePerson = cmpBalance(p, duePerson, task)
-            assignedTasks[duePerson][w] = assignedTasks[duePerson][w] + task[0] + " "
-            taskBalance[duePerson][task[0]] = 0
+                duePerson = cmpBalance(p, duePerson, task, w)
+            assignedTasks[duePerson][w] = assignedTasks[duePerson][w] + task.name + " "
+            taskBalance[duePerson][task] -= len(people)*task.period
         for p in people:
-            taskBalance[p][task[0]] += 1
+            taskBalance[p][task] += 1
+
 
 
 
@@ -80,4 +100,9 @@ for w in range(1,printTo):
         print("</tr>")
     currentDate += weekDelta
 
-print("</table></body></html>")
+print("</table>")
+
+for task in tasks:
+    print("<p><h4 style=\"display:inline\">" + task.name + "</h4> - " + task.desc + "</p>")
+
+print("</body></html>")
