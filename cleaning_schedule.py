@@ -83,7 +83,7 @@ for w in range(1, printTo):
 
 print("<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>")
 print("<style> td{border:1px solid black; padding:15px;}</style>")
-print("</head><body><h1>WG-Putzplan</h1><table>")
+print("</head><body><h1 style=\"text-align:center\">The Homely Homestead - Putzplan</h1><table style=\"margin: 0px auto\">")
 
 print("<tr><td></td>")
 for p in people:
