@@ -3,8 +3,9 @@
 
 import sys
 from datetime import date, timedelta
-from random import randint, seed, shuffle
+from random import randint, seed, shuffle, random
 import sqlite3
+import numbers
 
 conn = sqlite3.connect('test2.db')
 
@@ -17,19 +18,17 @@ class Task:
 
 
 people = ["Anna", "Benni", "Dominik", "Sophia", "Philipp"]
-tasks = [Task("KüAuf", 1, 0, ("Küche Aufräumen. "
-                              "Flächen, Herd und Tisch "
-                              "aufräumen und abwischen. Mülleimer leeren")),
-         Task("KüKe", 4, 1, ("Küche Kehren")),
-         Task("KüWi", 4, 3, ("Küche Wischen")),
-         Task("GaKe", 8, 1, ("Gang Kehren/Staubstaugen")),
-         Task("GaWi", 8, 5, ("Gang Wischen")),
-         Task("Klos", 2, 0, ("Beide Klos putzen")),
-         Task("WaBe", 2, 1, ("Waschbecken + Spiegel in beiden Toiletten putzen")),
-         Task("GlaMü", 6, 2,("Glas Müll wegbringen") ),
-         Task("Surp", 2, 0, ("Surprise Task. Putze irgendetwas das dreckig ist, und nicht"
-                             " von einem anderen Task abgedeckt wird"))]
+tasks = [Task("KüPu", 1.1, 0, ("Küche Aufräumen. Flächen, Herd und Tisch "
+                              "aufräumen und abwischen. Mülleimer leeren."
+                              "Boden kehren oder Wischen, nach eigenem Ermessen")),
+         Task("GaPu", 6, 3, ("Gang Putzen. Kehren oder Wischen, nach eigenem Ermessen")),
+         Task("Klos", 1.0, 0, ("Beide Klos putzen")),
+         Task("WaBe", 1.9, 1, ("Waschbecken + Spiegel in beiden Toiletten putzen")),
+         Task("GlaMü", 8, 4,("Glas Müll wegbringen") ),
+         Task("Surp", 2.2, 0, ("Surprise Task. Putze irgendetwas das dreckig ist,"
+                             "nach eigenem Ermessen"))]
 
+tasks.sort(key= lambda task:  -task.period)
 seed(1)
 
 def selectBestCandidate(week, task):
@@ -46,16 +45,25 @@ def selectBestCandidate(week, task):
             leastAssignments = [p]
             assignmentCount = len(res)
 
+    print( leastAssignments )
     leastRecentlyAssigned = []
     weeksSinceAssignment = 0
+    avPeriod = task.period * len(people)
     for p in leastAssignments:
-        cursor = conn.execute("SELECT * FROM assignments" \
+        cursor = conn.execute("SELECT week FROM assignments" \
                               " WHERE task=? AND person=? ORDER BY WEEK DESC", (task.name, p))
         res = cursor.fetchall()
+
         if len(res) == 0:
-            last = week
-        else:
-            last = week-res[0][3]
+            last = avPeriod
+        elif len(res) == 1:
+            last = (week-res[0][0] + avPeriod * 2)/3
+        elif len(res) == 2:
+            last = (week-res[1][0] + avPeriod * 1)/3
+        elif len(res) >= 3:
+            last = (week-res[2][0])/3
+
+        print(str(week) + " " + task.name + " " + p + " " + str(last));
 
         if last == weeksSinceAssignment or len(leastRecentlyAssigned) == 0:
             leastRecentlyAssigned.append(p)
@@ -65,20 +73,26 @@ def selectBestCandidate(week, task):
             weeksSinceAssignment = last
 
     shuffle(leastRecentlyAssigned)
+    print( leastRecentlyAssigned )
+    print()
 
-    return leastRecentlyAssigned[0]
+    return (leastRecentlyAssigned[0], round(weeksSinceAssignment/avPeriod,2))
 
 def schedule(fromWeek, toWeek):
     for w in range(fromWeek,toWeek):
         for task in tasks:
             cursor = conn.execute("SELECT * FROM assignments WHERE task=? ORDER BY week DESC",
                                   (task.name,))
-            res = cursor.fetchone()
-
-            if (w - res[3]) >= task.period:
-              candidate = selectBestCandidate(w, task)
-              cursor = conn.execute("INSERT INTO assignments (week, person, task)" \
-                                    "VALUES (?, ?, ?)", (w, candidate, task.name))
+            res = cursor.fetchall()
+            if len(res) == 0:
+                weeksSinceAssignment = 1 + w - fromWeek + task.offset
+            else:
+                weeksSinceAssignment = w-res[0][3]
+            if weeksSinceAssignment >= round(task.period  + random() *0.49):
+              (candidate, balance) = selectBestCandidate(w, task)
+              cursor = conn.execute("INSERT INTO assignments (week, person, task, balance)" \
+                                    "VALUES (?, ?, ?, ?)",
+                                    (w, candidate, task.name, balance ))
 
 def printHTML(fromWeek, toWeek):
     startDate = date(2015, 10, 12)
@@ -93,9 +107,9 @@ def printHTML(fromWeek, toWeek):
         print("<style> td{border:1px solid black; padding:15px;}</style>", file=f)
         print("<style> .exclude{  background-image: url(./tree.png);" \
               "background-size: 50px 50px; }</style>", file=f)
-        print("<style> .schedule{  background: repeating-linear-gradient(  45deg,  "\
-              "#FFFFFF,  #FFFFFF 10px,  #EEEEEE 10px,  #EEEEEE 20px);"
-              "\text-align:center}</style>",
+        print("<style> .schedule{  background: repeating-linear-gradient(  45deg,  "
+              "#FFFFFF,  #FFFFFF 10px,  RGBA(0,0,0,0.5) 10px,  RGBA(0,0,0,0.5) 20px);"
+              "text-align:center}</style>",
               file=f)
         print("</head><body style=\"font-family: verdana\"><h1 style=\"text-align:center\">" \
               "The Homely Homestead - Putzplan</h1><table style=\"margin: 0px auto\">", file=f)
@@ -110,13 +124,25 @@ def printHTML(fromWeek, toWeek):
             print( "<tr>", file=f)
             print( "<td>" + currentDate.strftime("KW%W, %d.%b") + " </td>", file=f)
             for p in people:
-                cursor = conn.execute("SELECT * FROM assignments WHERE person = ? AND week = ?",
-                                      (p, w))
+                cursor = conn.execute("SELECT task, balance FROM assignments "
+                                      "WHERE person = ? AND week = ?", (p, w))
                 res = cursor.fetchall()
                 if len(res) != 0:
-                    print("<td class=schedule>", file=f)
+                    if isinstance(res[0][1], numbers.Number):
+                        intensity = round(min(max((res[0][1]-0.9)*0.4, 0.0), 0.25), 2)
+                    else:
+                        intensity = 0.1
+
+                    intensity = round(255-intensity*255)
+                    color = ("RGB(" + str(intensity) + ","
+                             + str(intensity) + "," + str(intensity) + ")")
+                    print("<td style=\"background: repeating-linear-gradient(45deg,"
+                          "#FFFFFF,  #FFFFFF 10px,"
+                          +color+ " 10px," + color + " 20px); text-align:center\">",
+                          file=f)
+
                     for row in res:
-                        print ( row[2], file=f)
+                        print ( row[0], file=f)
                 else:
                     print("<td>", file=f)
                 print("</td>", file=f)
@@ -127,7 +153,7 @@ def printHTML(fromWeek, toWeek):
         print("</table>", file=f)
         for task in tasks:
             print("<p><h4 style=\"display:inline\">" + task.name +
-                  "</h4> - " + task.desc + "</p>", file=f)
+                  "</h4> (" + str(task.period) + ") - " + task.desc + "</p>", file=f)
         print("</body></html>", file=f)
 
 
