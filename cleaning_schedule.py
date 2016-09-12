@@ -7,7 +7,7 @@ from random import randint, seed, shuffle, random
 import sqlite3
 import numbers
 
-conn = sqlite3.connect('test2.db')
+conn = sqlite3.connect('test4.db')
 
 class Task:
     def __init__(self, name, period, offset, desc):
@@ -17,16 +17,19 @@ class Task:
         self.desc = desc
 
 
-people = ["Anna", "Benni", "Dominik", "Sophia", "Philipp"]
+people = ["Philipp", "Anna", "Benni", "Dominik", "Sophia"]
 tasks = [Task("KüPu", 1.1, 0, ("Küche Aufräumen. Flächen, Herd und Tisch "
-                              "aufräumen und abwischen. Mülleimer leeren."
-                              "Boden kehren oder Wischen, nach eigenem Ermessen")),
+                              "aufräumen und abwischen. Alle Mülleimer leeren. "
+                              "Spülmaschine leeren/anmachen/füllen. "
+                               "Den Boden immer kehren und wischen!")),
          Task("GaPu", 6, 3, ("Gang Putzen. Kehren oder Wischen, nach eigenem Ermessen")),
-         Task("Klos", 1.0, 0, ("Beide Klos putzen")),
-         Task("WaBe", 1.9, 1, ("Waschbecken + Spiegel in beiden Toiletten putzen")),
+         Task("Klos", 1.1, 0, ("Beide Klos putzen")),
+         Task("WaBe", 2.1, 1, ("Waschbecken + Spiegel in beiden Toiletten putzen")),
          Task("GlaMü", 8, 4,("Glas Müll wegbringen") ),
-         Task("Surp", 2.2, 0, ("Surprise Task. Putze irgendetwas das dreckig ist,"
-                             "nach eigenem Ermessen"))]
+         Task("Surp", 3.0, 0, ("Surprise Task. Putze irgendetwas das dreckig ist"))]
+
+for t in tasks:
+    t.period *= 5 / len(people)
 
 tasks.sort(key= lambda task:  -task.period)
 seed(1)
@@ -54,14 +57,25 @@ def selectBestCandidate(week, task):
                               " WHERE task=? AND person=? ORDER BY WEEK DESC", (task.name, p))
         res = cursor.fetchall()
 
-        if len(res) == 0:
-            last = avPeriod
-        elif len(res) == 1:
-            last = (week-res[0][0] + avPeriod * 2)/3
-        elif len(res) == 2:
-            last = (week-res[1][0] + avPeriod * 1)/3
-        elif len(res) >= 3:
-            last = (week-res[2][0])/3
+        events = [0,0,0,0]
+
+        events[0] = avPeriod * 1.25
+        if len(res) > 0:
+            events[0] = week-res[0][0]
+
+        events[1] = events[0] + avPeriod * 1.25
+        if len(res) > 1:
+            events[1] = week-res[1][0]
+
+        events[2] = events[1] + avPeriod * 1.25
+        if len(res) > 2:
+            events[2] = week-res[2][0]
+
+        events[3] = events[2] + avPeriod * 1.25
+        if len(res) > 3:
+            events[3] = week-res[3][0]
+
+        last = (events[0] + events[1] * 0.9 + events[2] * 0.5 + events[3] * 0.1)/2.5
 
         print(str(week) + " " + task.name + " " + p + " " + str(last));
 
@@ -114,7 +128,7 @@ def printHTML(fromWeek, toWeek):
         print("</head><body style=\"font-family: verdana\"><h1 style=\"text-align:center\">" \
               "The Homely Homestead - Putzplan</h1><table style=\"margin: 0px auto\">", file=f)
 
-        print("<tr><td></td>", file=f)
+        print("<tr><td><b>KW, Beginn</b></td>", file=f)
         for p in people:
             print("<td><b>" + p + "<b></td>", file=f);
         print("</tr>", file=f)
@@ -122,14 +136,14 @@ def printHTML(fromWeek, toWeek):
         currentDate = startDate + (fromWeek-1)*weekDelta
         for w in range(fromWeek,toWeek):
             print( "<tr>", file=f)
-            print( "<td>" + currentDate.strftime("KW%W, %d.%b") + " </td>", file=f)
+            print( "<td>" + currentDate.strftime("KW%W, ab %d.%b") + " </td>", file=f)
             for p in people:
                 cursor = conn.execute("SELECT task, balance FROM assignments "
                                       "WHERE person = ? AND week = ?", (p, w))
                 res = cursor.fetchall()
                 if len(res) != 0:
                     if isinstance(res[0][1], numbers.Number):
-                        intensity = round(min(max((res[0][1]-0.9)*0.4, 0.0), 0.25), 2)
+                        intensity = round(min(max((res[0][1]-1.0)*0.05, 0.0), 0.25), 2)
                     else:
                         intensity = 0.1
 
