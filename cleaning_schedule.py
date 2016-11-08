@@ -7,7 +7,7 @@ from random import randint, seed, shuffle, random
 import sqlite3
 import numbers
 
-conn = sqlite3.connect('test4.db')
+conn = sqlite3.connect('test5.db')
 
 class Task:
     def __init__(self, name, period, offset, desc):
@@ -18,15 +18,15 @@ class Task:
 
 
 people = ["Philipp", "Anna", "Benni", "Dominik", "Sophia"]
-tasks = [Task("KüPu", 1.1, 0, ("Küche Aufräumen. Flächen, Herd und Tisch "
+tasks = [Task("KüPu", 1.0, 0, ("Küche Aufräumen. Flächen, Herd und Tisch "
                               "aufräumen und abwischen. Alle Mülleimer leeren. "
                               "Spülmaschine leeren/anmachen/füllen. "
                                "Den Boden immer kehren und wischen!")),
          Task("GaPu", 6, 3, ("Gang Putzen. Kehren oder Wischen, nach eigenem Ermessen")),
-         Task("Klos", 1.1, 0, ("Beide Klos putzen")),
-         Task("WaBe", 2.1, 1, ("Waschbecken + Spiegel in beiden Toiletten putzen")),
+         Task("Klos", 1.0, 0, ("Beide Klos putzen")),
+         Task("WaBe", 2.5, 1, ("Waschbecken + Spiegel in beiden Toiletten putzen")),
          Task("GlaMü", 8, 4,("Glas Müll wegbringen") ),
-         Task("Surp", 3.0, 0, ("Surprise Task. Putze irgendetwas das dreckig ist"))]
+         Task("Surp", 2.5, 0, ("Surprise Task. Putze irgendetwas das dreckig ist"))]
 
 for t in tasks:
     t.period *= 5 / len(people)
@@ -48,6 +48,8 @@ def selectBestCandidate(week, task):
             leastAssignments = [p]
             assignmentCount = len(res)
 
+    if assignmentCount == -1:
+        leastAssignments = []
     print( leastAssignments )
     leastRecentlyAssigned = []
     weeksSinceAssignment = 0
@@ -75,7 +77,7 @@ def selectBestCandidate(week, task):
         if len(res) > 3:
             events[3] = week-res[3][0]
 
-        last = (events[0] + events[1] * 0.9 + events[2] * 0.5 + events[3] * 0.1)/2.5
+        last = (events[0] + events[1] * 0.5 + events[2] * 0.1)/1.6
 
         print(str(week) + " " + task.name + " " + p + " " + str(last));
 
